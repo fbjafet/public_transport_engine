@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Disruption #{{ disruption.id }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="item-header">
+    <h2>Disruption #{{ disruption.id }} — {{ disruption.route.route_code }} ({{ disruption.route.name }})</h2>
+    <div>
+      <span class="badge badge-{{ disruption.severity }}">{{ disruption.severity }}</span>
+      <span class="badge badge-{{ disruption.status }}">{{ disruption.status }}</span>
+    </div>
+  </div>
+  <p><strong>Driver Note:</strong> {{ disruption.raw_driver_note }}</p>
+  <p><strong>Affected Stop:</strong> {{ disruption.affected_stop.name if disruption.affected_stop else "Multiple / Unspecified" }}</p>
+  <p><strong>AI Diversion Summary:</strong> {{ disruption.diversion_summary }}</p>
+
+  {% if disruption.status == "open" %}
+    <div class="actions">
+      <form method="post" action="{{ url_for('disruptions.generate_alerts', disruption_id=disruption.id) }}" class="inline-form">
+        <select name="tone">
+          <option value="informational">Informational tone</option>
+          <option value="urgent">Urgent tone</option>
+        </select>
+        <button type="submit" class="btn">Regenerate AI Drafts</button>
+      </form>
+
+      <form method="post" action="{{ url_for('disruptions.resolve_disruption', disruption_id=disruption.id) }}">
+        <button type="submit" class="btn btn-ghost">Mark Resolved</button>
+      </form>
+    </div>
+  {% endif %}
+</section>
+
+<section class="card">
+  <h3>Multi-Channel Passenger Alerts</h3>
+  <ul class="stack">
+    {% for a in disruption.alerts %}
+      {% if a.status != "archived" %}
+        <li class="item">
+          <div class="item-header">
+            <strong>{{ a.channel|upper }}</strong>
+            <div>
+              <span class="badge badge-{{ a.tone }}">{{ a.tone }}</span>
+              <span class="badge badge-{{ a.status }}">{{ a.status }}</span>
+            </div>
+          </div>
+          <p>{{ a.message_body }}</p>
+          {% if a.status == "draft" and disruption.status == "open" %}
+            <form method="post" action="{{ url_for('disruptions.publish_alert', alert_id=a.id) }}">
+              <button type="submit" class="btn btn-primary">Publish to {{ a.channel|upper }}</button>
+            </form>
+          {% elif a.published_at %}
+            <small class="muted">Published at {{ a.published_at.strftime('%Y-%m-%d %H:%M UTC') }}</small>
+          {% endif %}
+        </li>
+      {% endif %}
+    {% endfor %}
+  </ul>
+</section>
+{% endblock %}

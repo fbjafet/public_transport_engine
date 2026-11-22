@@ -1,0 +1,117 @@
+{% extends "base.html" %}
+{% block title %}Dispatcher Dashboard{% endblock %}
+
+{% block content %}
+<div class="grid-2">
+  <section class="card">
+    <h2>Active Disruptions ({{ active_disruptions|length }})</h2>
+    {% if active_disruptions %}
+      <ul class="stack">
+        {% for d in active_disruptions %}
+          <li class="item">
+            <div class="item-header">
+              <strong>{{ d.route.route_code }} — {{ d.route.name }}</strong>
+              <span class="badge badge-{{ d.severity }}">{{ d.severity }}</span>
+            </div>
+            <p class="muted">{{ d.diversion_summary }}</p>
+            <div class="actions">
+              <a href="{{ url_for('disruptions.disruption_detail', disruption_id=d.id) }}" class="btn">Manage Alerts</a>
+              <form method="post" action="{{ url_for('disruptions.resolve_disruption', disruption_id=d.id) }}">
+                <button type="submit" class="btn btn-ghost">Resolve</button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="muted">No active disruptions. All corridors operating normally.</p>
+    {% endif %}
+  </section>
+
+  <section class="card">
+    <div class="item-header">
+      <h2>Live Dispatch Feed</h2>
+      <span id="sse-status" class="badge badge-normal">Connecting...</span>
+    </div>
+    <ul id="live-feed" class="stack">
+      {% for a in recent_published %}
+        <li class="item">
+          <div class="item-header">
+            <strong>{{ a.disruption.route.route_code }} · {{ a.channel|upper }}</strong>
+            <span class="badge badge-{{ a.tone }}">{{ a.tone }}</span>
+          </div>
+          <p>{{ a.message_body }}</p>
+        </li>
+      {% else %}
+        <li class="muted" id="feed-empty">Waiting for live events...</li>
+      {% endfor %}
+    </ul>
+  </section>
+</div>
+
+<section class="card">
+  <h2>Network Route Status</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Route</th>
+        <th>Mode</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r in routes %}
+        <tr>
+          <td><strong>{{ r.route_code }}</strong></td>
+          <td>{{ r.name }}</td>
+          <td>{{ r.mode|capitalize }}</td>
+          <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+          <td><a href="{{ url_for('dashboard.route_detail', route_id=r.id) }}">Timetable →</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  const feed = document.getElementById("live-feed");
+  const statusEl = document.getElementById("sse-status");
+  const evtSource = new EventSource("{{ url_for('dashboard.event_stream') }}");
+
+  function prependEvent(title, body) {
+    const empty = document.getElementById("feed-empty");
+    if (empty) empty.remove();
+    const li = document.createElement("li");
+    li.className = "item";
+    li.innerHTML = `<div class="item-header"><strong>${title}</strong></div><p>${body}</p>`;
+    feed.prepend(li);
+  }
+
+  evtSource.addEventListener("connected", () => {
+    statusEl.textContent = "Live";
+  });
+
+  evtSource.addEventListener("disruption_created", (e) => {
+    const msg = JSON.parse(e.data);
+    prependEvent(`NEW DISRUPTION · ${msg.data.route_code} (${msg.timestamp})`, msg.data.summary);
+  });
+
+  evtSource.addEventListener("alert_published", (e) => {
+    const msg = JSON.parse(e.data);
+    prependEvent(`PUBLISHED ${msg.data.channel.toUpperCase()} · ${msg.data.route_code} (${msg.timestamp})`, msg.data.message);
+  });
+
+  evtSource.addEventListener("disruption_resolved", (e) => {
+    const msg = JSON.parse(e.data);
+    prependEvent(`RESOLVED · ${msg.data.route_code} (${msg.timestamp})`, `Route status is now ${msg.data.route_status}.`);
+  });
+
+  evtSource.onerror = () => {
+    statusEl.textContent = "Reconnecting...";
+  };
+</script>
+{% endblock %}

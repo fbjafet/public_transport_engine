@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}{{ route.route_code }} — {{ route.name }}{% endblock %}
+
+{% block content %}
+<section class="card">
+  <div class="item-header">
+    <h2>{{ route.route_code }} — {{ route.name }} ({{ route.mode|capitalize }})</h2>
+    <span class="badge badge-{{ route.status }}">{{ route.status }}</span>
+  </div>
+</section>
+
+<div class="grid-2">
+  <section class="card">
+    <h3>Stops</h3>
+    <ul class="stack">
+      {% for s in route.stops %}
+        <li class="item">
+          <strong>{{ s.stop_code }}</strong> — {{ s.name }}
+          {% if s.has_digital_signage %}
+            <span class="badge badge-normal">Signage</span>
+          {% endif %}
+        </li>
+      {% else %}
+        <li class="muted">No stops mapped.</li>
+      {% endfor %}
+    </ul>
+  </section>
+
+  <section class="card">
+    <h3>Upcoming Trips</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Headsign</th>
+          <th>Scheduled</th>
+          <th>Delay</th>
+          <th>Status</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in trips %}
+          <tr>
+            <td>{{ t.headsign }}</td>
+            <td>{{ t.scheduled_departure.strftime('%H:%M') }}</td>
+            <td>{% if t.delay_minutes %}+{{ t.delay_minutes }} min{% else %}On time{% endif %}</td>
+            <td><span class="badge badge-{{ t.status }}">{{ t.status }}</span></td>
+          </tr>
+        {% else %}
+          <tr><td colspan="4" class="muted">No trips scheduled.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+</div>
+
+<section class="card">
+  <h3>Active Disruptions</h3>
+  {% for d in active_disruptions %}
+    <div class="item">
+      <div class="item-header">
+        <span class="badge badge-{{ d.severity }}">{{ d.severity }}</span>
+        <a href="{{ url_for('disruptions.disruption_detail', disruption_id=d.id) }}">Open Incident →</a>
+      </div>
+      <p>{{ d.diversion_summary }}</p>
+    </div>
+  {% else %}
+    <p class="muted">No active disruptions on this route.</p>
+  {% endfor %}
+</section>
+{% endblock %}
