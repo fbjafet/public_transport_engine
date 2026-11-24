@@ -259,6 +259,7 @@ def test_database_rejects_two_published_alerts_on_one_channel(world):
                             message_body="b", status="published"))
         with pytest.raises(IntegrityError):
             db.flush()
+        db.rollback()
 
 
 # ---- roles -------------------------------------------------------------------------------------
