@@ -51,7 +51,7 @@ def _now() -> datetime:
 # --------------------------------------------------------------------------- #
 def _lock_route(db, route_id: int) -> Route:
     route = db.scalar(
-        select(Route).where(Route.id == route_id).with_for_update().populate_existing()
+        select(Route).where(Route.id == 	route_id).with_for_update().execution_options(populate_existing=True)
     )
     if route is None:
         raise NotFound("Route not found.")
@@ -69,7 +69,7 @@ def _lock_disruption(db, disruption_id: int) -> tuple[Route, DisruptionEvent]:
         select(DisruptionEvent)
         .where(DisruptionEvent.id == disruption_id)
         .with_for_update()
-        .populate_existing()
+        .execution_options(populate_existing=True)
     )
     if disruption is None:
         raise NotFound("Disruption not found.")
@@ -266,7 +266,7 @@ def publish_alert(alert_id: int) -> Outcome:
         route, d = _lock_disruption(db, disruption_id)
         alert = db.scalar(
             select(ServiceAlert).where(ServiceAlert.id == alert_id)
-            .with_for_update().populate_existing()
+            .with_for_update().execution_options(populate_existing=True)
         )
         if alert is None:
             raise NotFound("Alert not found.")
