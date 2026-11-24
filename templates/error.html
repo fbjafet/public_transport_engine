@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block title %}{{ status }} {{ title }}{% endblock %}
+
+{% block content %}
+<section class="card form-card">
+  <h2>{{ status }} — {{ title }}</h2>
+  <p>{{ message }}</p>
+  <p><a href="{{ url_for('dashboard.index') }}">Back to the dashboard</a></p>
+</section>
+{% endblock %}

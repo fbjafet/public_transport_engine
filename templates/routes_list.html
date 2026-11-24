@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}All Routes{% endblock %}
+
+{% block content %}
+<section class="card">
+  <h2>All Transit Routes</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Code</th>
+        <th>Name</th>
+        <th>Mode</th>
+        <th>Stops</th>
+        <th>Status</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for r, stop_count in rows %}
+        <tr>
+          <td><strong>{{ r.route_code }}</strong></td>
+          <td>{{ r.name }}</td>
+          <td>{{ r.mode|capitalize }}</td>
+          <td>{{ stop_count }}</td>
+          <td><span class="badge badge-{{ r.status }}">{{ r.status }}</span></td>
+          <td><a href="{{ url_for('dashboard.route_detail', route_id=r.id) }}">Inspect →</a></td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</section>
+{% endblock %}

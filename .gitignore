@@ -1,1 +1,16 @@
+.venv/
 venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.env
+*.db
+*.sqlite3
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+.pytest_cache/
+.coverage
+htmlcov/
+.ruff_cache/
